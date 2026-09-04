@@ -5,7 +5,6 @@
   "keybinds.bettercombat.toggle_mine_with_weapons": "Alternar Minerar com Armas",
   "hud.bettercombat.mine_with_weapons_on": "Minerar com armas: Sim",
   "hud.bettercombat.mine_with_weapons_off": "Minerar com armas: Não",
-
   "text.autoconfig.bettercombat.title": "Better Combat",
   "text.autoconfig.bettercombat.option.client.isHoldToAttackEnabled": "Segurar para atacar",
   "text.autoconfig.bettercombat.option.client.isHoldToAttackEnabled.@Tooltip": "Ataca automaticamente ao segurar o botão de ataque",
@@ -48,5 +47,6 @@
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations": "Animações em primeira pessoa",
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations.@Tooltip": "Animações de ataque do jogador a serem exibidas. Recomenda-se alterar apenas se estiver usando mods de câmera personalizados.",
   "text.autoconfig.bettercombat.option.client.legAnimationThreshold": "Desativar animações das pernas",
-  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "EXPERIMENTAL: Desativa as animações das pernas ao correr acima desta velocidade"
+  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "EXPERIMENTAL: Desativa as animações das pernas ao correr acima desta velocidade",
+  "keybinds.bettercombat.emote_wheel": "Emote wheel"
 }

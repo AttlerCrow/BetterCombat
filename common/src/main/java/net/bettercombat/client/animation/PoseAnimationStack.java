@@ -20,6 +20,13 @@ public class PoseAnimationStack extends PlayerAnimationController {
     public static final Identifier OFF_HAND_BODY_ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "pose_off_hand_body");
     public static final Identifier OFF_HAND_ITEM_ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "pose_off_hand_item");
 
+    /** Bone names as the animation library registers them - snake_case, not the rig's camelCase. */
+    private static final String ITEM_RIGHT = "right_item";
+    private static final String ITEM_LEFT = "left_item";
+    private static final String[] BODY_PARTS = {
+            "head", "torso", "body", "right_arm", "left_arm", "right_leg", "left_leg"
+    };
+
     public final MirrorModifier mirror = new MirrorModifier();
     public boolean lastAnimationUsesBodyChannel = false;
     private final boolean isMainHand;
@@ -43,25 +50,27 @@ public class PoseAnimationStack extends PlayerAnimationController {
         // Configure first-person mode using compatibility layer
         this.firstPersonMode = (controller) -> FirstPersonMode.DISABLED;
 
-        // Configure which body parts are enabled based on channel type
-//        this.setPostAnimationSetupConsumer((func) -> {
-//            if (isBodyChannel) {
-//                // Body channel: disable items, enable body parts
-//                func.apply("rightItem").setEnabled(false);
-//                func.apply("leftItem").setEnabled(false);
-//                lastAnimationUsesBodyChannel = true;
-//            } else {
-//                // Item channel: disable body parts, enable items
-//                func.apply("head").setEnabled(false);
-//                func.apply("torso").setEnabled(false);
-//                func.apply("body").setEnabled(false);
-//                func.apply("rightArm").setEnabled(false);
-//                func.apply("leftArm").setEnabled(false);
-//                func.apply("rightLeg").setEnabled(false);
-//                func.apply("leftLeg").setEnabled(false);
-//                lastAnimationUsesBodyChannel = false;
-//            }
-//        });
+        // Split the two channels apart by bone.
+        //
+        // This was dead code: it used camelCase names ("rightItem", "rightArm"), which are not in the
+        // bone map, so every call returned null and threw - and with it commented out both channels
+        // animated everything. That is why a weapon grip bled through on top of an emote: the "item"
+        // layer was applying the whole grip pose, arms included. The real names are snake_case.
+        this.setPostAnimationSetupConsumer((func) -> {
+            if (isBodyChannel) {
+                // Body channel: pose the body, leave the weapon to the item channel.
+                func.apply(ITEM_RIGHT).setEnabled(false);
+                func.apply(ITEM_LEFT).setEnabled(false);
+                lastAnimationUsesBodyChannel = true;
+            } else {
+                // Item channel: place the weapon and nothing else, so it can stay active while an
+                // emote owns the arms.
+                for (String part : BODY_PARTS) {
+                    func.apply(part).setEnabled(false);
+                }
+                lastAnimationUsesBodyChannel = false;
+            }
+        });
     }
 
     public void setPose(@Nullable String animationId, boolean isLeftHanded) {

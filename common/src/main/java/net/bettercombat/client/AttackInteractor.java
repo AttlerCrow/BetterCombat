@@ -177,6 +177,7 @@ public class AttackInteractor {
         if (client.player == null) {
             return;
         }
+        net.bettercombat.client.studio.EmotePhotoCamera.tick(client);
         if (Keybindings.toggleMineKeyBinding.consumeClick()) {
             BetterCombatClientMod.config.isMiningWithWeaponsEnabled = !BetterCombatClientMod.config.isMiningWithWeaponsEnabled;
             AutoConfig.getConfigHolder(ClientConfigWrapper.class).save();

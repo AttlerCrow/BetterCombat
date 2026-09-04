@@ -47,6 +47,90 @@ public class ClientNetwork {
         });
     }
 
+    /**
+     * Plays an animation the server asked for, on any player including the local one.
+     *
+     * <p>Deliberately without the {@code player != client.player} guard that
+     * {@link #handleAttackAnimation} needs: nothing was played locally beforehand, so skipping the
+     * local player would mean the one who triggered the skill is the only one who never sees it.
+     */
+    public static void handleForcedAnimation(Packets.ForcedAnimation packet) {
+        var client = Minecraft.getInstance();
+        client.execute(() -> {
+            if (client.level == null) {
+                return;
+            }
+            var entity = client.level.getEntity(packet.playerId());
+            if (entity instanceof Player) {
+                var animatable = (PlayerAttackAnimatable) entity;
+                if (packet.animationName().equals(Packets.AttackAnimation.StopSymbol)) {
+                    animatable.stopAttackAnimation(packet.length());
+                } else {
+                    animatable.playAttackAnimation(
+                            packet.animationName(), packet.animatedHand(), packet.length(), packet.upswing());
+                }
+            }
+        });
+    }
+
+    /**
+     * Plays or stops an emote the server asked for, on any player including the local one.
+     *
+     * <p>Same reasoning as {@link #handleForcedAnimation}: nothing was played locally beforehand, so
+     * skipping the local player would leave the one who typed the command as the only person who
+     * never sees it.
+     */
+    public static void handlePlayEmote(Packets.PlayEmote packet) {
+        var client = Minecraft.getInstance();
+        client.execute(() -> {
+            if (client.level == null) {
+                return;
+            }
+            var entity = client.level.getEntity(packet.playerId());
+            if (entity instanceof Player) {
+                var animatable = (PlayerAttackAnimatable) entity;
+                if (packet.stop()) {
+                    animatable.stopEmoteAnimation();
+                } else {
+                    var anchor = packet.hasItemAnchor()
+                            ? new net.bettercombat.client.animation.EmoteItemAnchor(
+                                    packet.itemX(), packet.itemY(), packet.itemZ(),
+                                    packet.itemPitch(), packet.itemYaw(), packet.itemRoll())
+                            : null;
+                    var offAnchor = packet.hasOffHandAnchor()
+                            ? new net.bettercombat.client.animation.EmoteItemAnchor(
+                                    packet.offX(), packet.offY(), packet.offZ(),
+                                    packet.offPitch(), packet.offYaw(), packet.offRoll())
+                            : null;
+                    if (packet.anchorOnly()) {
+                        animatable.updateEmoteItemAnchors(anchor, offAnchor);
+                    } else {
+                        animatable.playEmoteAnimation(packet.animationName(), packet.length(),
+                                packet.hidePose(), packet.photoCamera(), packet.hideItems(), packet.thirdPerson(), packet.keepOnAttack(),
+                                packet.cameraHeightOffset(),
+                                anchor, offAnchor);
+                    }
+                }
+            }
+        });
+    }
+
+    /** Applies a studio action requested by a command. */
+    public static void handleEmoteStudio(Packets.S2C_EmoteStudio packet) {
+        var client = Minecraft.getInstance();
+        client.execute(() -> {
+            switch (packet.action()) {
+                case Packets.S2C_EmoteStudio.SWITCH_HAND ->
+                        net.bettercombat.client.studio.EmoteStudio.switchHand(client);
+                case Packets.S2C_EmoteStudio.SAVE ->
+                        net.bettercombat.client.studio.EmoteStudio.save(client);
+                case Packets.S2C_EmoteStudio.CLOSE ->
+                        net.bettercombat.client.studio.EmoteStudio.close(client);
+                default -> net.bettercombat.client.studio.EmoteStudio.toggle(client);
+            }
+        });
+    }
+
     public static void handleAttackSound(Packets.AttackSound packet) {
         var client = Minecraft.getInstance();
         client.execute(() -> {

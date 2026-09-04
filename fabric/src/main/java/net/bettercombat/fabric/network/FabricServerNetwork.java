@@ -52,11 +52,33 @@ public class FabricServerNetwork {
         });
 
         // Play stage
+        // The handshake payloads are registered for PLAY as well, not just CONFIGURATION.
+        // A Bukkit/Paper server can only send a plugin message on a channel the client has already
+        // announced via `minecraft:register`, and that announcement does not reach such a server in
+        // time during the configuration phase - it silently drops the message. Registering here makes
+        // the client advertise the channels once it enters PLAY, so a plugin-based server can deliver
+        // the handshake right after join. Vanilla-mod servers keep using the configuration path.
+        PayloadTypeRegistry.clientboundPlay().register(Packets.ConfigSync.PACKET_ID, Packets.ConfigSync.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Packets.WeaponRegistrySync.PACKET_ID, Packets.WeaponRegistrySync.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Packets.ForcedAnimation.PACKET_ID, Packets.ForcedAnimation.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Packets.PlayEmote.PACKET_ID, Packets.PlayEmote.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Packets.S2C_EmoteStudio.PACKET_ID, Packets.S2C_EmoteStudio.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Packets.AttackSound.PACKET_ID, Packets.AttackSound.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Packets.AttackAnimation.PACKET_ID, Packets.AttackAnimation.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Packets.AttackAnimation.PACKET_ID, Packets.AttackAnimation.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_AttackRequest.PACKET_ID, Packets.C2S_AttackRequest.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_BlockHit.PACKET_ID, Packets.C2S_BlockHit.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_EmoteAnchor.PACKET_ID, Packets.C2S_EmoteAnchor.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_EmoteStudioState.PACKET_ID, Packets.C2S_EmoteStudioState.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_EmoteFreeLook.PACKET_ID, Packets.C2S_EmoteFreeLook.CODEC);
+
+        // Client menus. Registering the types is what makes the client announce the channels, which
+        // is the only way a Paper server is allowed to send on them - and the only way it can tell a
+        // modded client from a vanilla one.
+        PayloadTypeRegistry.clientboundPlay().register(Packets.S2C_MenuOpen.PACKET_ID, Packets.S2C_MenuOpen.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Packets.S2C_MenuUpdate.PACKET_ID, Packets.S2C_MenuUpdate.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Packets.S2C_MenuClose.PACKET_ID, Packets.S2C_MenuClose.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_MenuAction.PACKET_ID, Packets.C2S_MenuAction.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(Packets.AttackAnimation.PACKET_ID, (packet, context) -> {
             ServerNetwork.handleAttackAnimation(packet, context.server(), context.player());

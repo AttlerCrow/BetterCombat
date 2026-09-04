@@ -1,0 +1,11 @@
+{
+  "emote.conga": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "nightfantasy:vamoscarnaval",
+        "stream": true
+      }
+    ]
+  }
+}

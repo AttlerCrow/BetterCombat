@@ -5,7 +5,6 @@
   "keybinds.bettercombat.toggle_mine_with_weapons": "Переключить добывание оружием",
   "hud.bettercombat.mine_with_weapons_on": "Добывать оружием: Да",
   "hud.bettercombat.mine_with_weapons_off": "Добывать оружием: Нет",
-
   "text.autoconfig.bettercombat.title": "Better Combat",
   "text.autoconfig.bettercombat.option.client.isHoldToAttackEnabled": "Удерживайте для атаки",
   "text.autoconfig.bettercombat.option.client.isHoldToAttackEnabled.@Tooltip": "Автоматическая атака во время удерживания кнопки атаки (ЛКМ).",
@@ -42,5 +41,6 @@
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations": "Анимация игрока от первого лица",
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations.@Tooltip": "Будет показана анимация атаки игрока. Рекомендуется изменять только в том случае, если используются пользовательские модификации камеры.",
   "text.autoconfig.bettercombat.option.client.legAnimationThreshold": "Отключить анимацию ног",
-  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "ЭКСПЕРИМЕНТАЛЬНО: отключает анимацию ног при беге с такой скоростью"
+  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "ЭКСПЕРИМЕНТАЛЬНО: отключает анимацию ног при беге с такой скоростью",
+  "keybinds.bettercombat.emote_wheel": "Emote wheel"
 }

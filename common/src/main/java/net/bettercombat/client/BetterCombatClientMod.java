@@ -6,6 +6,7 @@ import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.JanksonConfigSerializer;
 import me.shedaniel.autoconfig.serializer.PartitioningSerializer;
 import net.bettercombat.client.animation.AttackAnimationStack;
+import net.bettercombat.client.animation.EmoteAnimationStack;
 import net.bettercombat.client.animation.PoseAnimationStack;
 import net.bettercombat.client.compat.CompatibilityFlags;
 import net.bettercombat.config.ClientConfig;
@@ -21,10 +22,19 @@ public class BetterCombatClientMod {
         config = AutoConfig.getConfigHolder(ClientConfigWrapper.class).getConfig().client;
 
         CompatibilityFlags.initialize();
+        net.bettercombat.client.compat.EmfEmotePause.register();
+        net.bettercombat.client.compat.EmfArmorModelBridge.register();
     }
 
     public static void setupAnimations() {
-        // Attack animation (priority 2000 - highest)
+        // Emote animation (priority 3000 - above attacks, so an emote is not fighting a stale swing)
+        PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(EmoteAnimationStack.ID, 3000,
+                player -> new EmoteAnimationStack(player,
+                        (controller, state, animSetter) -> PlayState.STOP
+                )
+        );
+
+        // Attack animation (priority 2000)
         PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(AttackAnimationStack.ID, 2000,
                 player -> new AttackAnimationStack(player,
                         (controller, state, animSetter) -> PlayState.STOP

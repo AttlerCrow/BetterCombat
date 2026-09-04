@@ -18,17 +18,26 @@
   ],
   "client": [
     "client.AbstractClientPlayerEntityMixin",
+    "client.AvatarRenderStateMixin",
+    "client.AvatarRendererMixin",
+    "client.CameraZoomMixin",
+    "client.ClientPlayNetworkHandlerMixin",
     "client.ClientPlayerEntityMixin",
     "client.ClientPlayerInteractionManagerMixin",
-    "client.ClientPlayNetworkHandlerMixin",
+    "client.EntityEyeHeightMixin",
     "client.EntityHitboxDebugRendererMixin",
     "client.InGameHudInject",
+    "client.ItemInHandLayerMixin",
     "client.ItemStackTooltipMixin",
     "client.MinecraftClientAccessor",
-    "client.MinecraftClientInject"
+    "client.MinecraftClientInject",
+    "client.PlayerFovMixin",
+    "client.PlayerModelBendObserverMixin",
+    "client.PlayerModelItemAnchorMixin",
+    "client.EquipmentLayerRendererMixin",
+    "client.HumanoidArmorLayerMixin"
   ],
-  "server": [
-  ],
+  "server": [],
   "injectors": {
     "defaultRequire": 1
   }

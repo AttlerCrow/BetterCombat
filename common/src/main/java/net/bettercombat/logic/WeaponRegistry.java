@@ -12,11 +12,13 @@ import net.bettercombat.api.WeaponAttributesHelper;
 import net.bettercombat.api.component.BetterCombatDataComponents;
 import net.bettercombat.network.Packets;
 import net.bettercombat.utils.CompressionHelper;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.io.InputStreamReader;
@@ -30,6 +32,12 @@ public class WeaponRegistry {
     // Actual attributes to weapon assignments
     static Map<Identifier, WeaponAttributes> registrations = new HashMap();
     static Map<Identifier, AttributesContainer> containers = new HashMap();
+
+    /**
+     * Prefix marking a `custom_model_data` string entry as an explicit weapon preset id,
+     * for example `bc_preset=nightfantasy:shadow_katana`.
+     */
+    public static final String PRESET_MARKER = "bc_preset=";
 
     public static void register(Identifier itemId, WeaponAttributes attributes) {
         registrations.put(itemId, attributes);
@@ -48,6 +56,23 @@ public class WeaponRegistry {
 //            return attributes;
 //        }
 
+        // Server-driven presets, for servers without the mod installed (Paper and friends).
+        // `custom_data`, where Bukkit keeps its persistent data container, is registered
+        // `.persistent()` only and is never sent to clients, so a plugin cannot key weapons by it.
+        // `custom_model_data` and `item_model` are both network-synchronized, so they are the only
+        // per-item signal such a server can actually address items by.
+        var marked = attributesFromPresetMarker(itemStack);
+        if (marked != null) {
+            return marked;
+        }
+        var itemModel = itemStack.get(DataComponents.ITEM_MODEL);
+        if (itemModel != null) {
+            var container = containers.get(itemModel);
+            if (container != null && container.attributes() != null) {
+                return container.attributes();
+            }
+        }
+
         var component = itemStack.get(BetterCombatDataComponents.WEAPON_PRESET_ID);
         if (component != null) {
             var container = containers.get(component);
@@ -58,6 +83,33 @@ public class WeaponRegistry {
         Item item = itemStack.getItem();
         Identifier id = BuiltInRegistries.ITEM.getKey(item);
         return WeaponRegistry.getAttributes(id);
+    }
+
+    /**
+     * Resolves an explicit preset id from the `custom_model_data` strings, if the item carries one.
+     * Takes priority over `item_model` so a server can override individual items that would
+     * otherwise share a model.
+     */
+    @Nullable
+    private static WeaponAttributes attributesFromPresetMarker(ItemStack itemStack) {
+        var customModelData = itemStack.get(DataComponents.CUSTOM_MODEL_DATA);
+        if (customModelData == null) {
+            return null;
+        }
+        for (var value : customModelData.strings()) {
+            if (value == null || !value.startsWith(PRESET_MARKER)) {
+                continue;
+            }
+            var id = Identifier.tryParse(value.substring(PRESET_MARKER.length()));
+            if (id == null) {
+                continue;
+            }
+            var container = containers.get(id);
+            if (container != null && container.attributes() != null) {
+                return container.attributes();
+            }
+        }
+        return null;
     }
 
     // LOADING

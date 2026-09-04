@@ -7,6 +7,7 @@ import net.bettercombat.client.particle.SlashParticle;
 import net.bettercombat.particle.BetterCombatParticles;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry;
@@ -26,6 +27,7 @@ public class FabricClientMod implements ClientModInitializer {
         //     return 1.0F;
         // });
         FabricClientNetwork.init();
+        ClientTickEvents.END_CLIENT_TICK.register(net.bettercombat.client.menu.ClientMenuKeys::tick);
         for (var entry: BetterCombatParticles.ENTRIES) {
             ParticleProviderRegistry.getInstance().register(
                     entry.particleType(), (provider) -> new SlashParticle.Provider(provider, entry.params())

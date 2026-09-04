@@ -209,6 +209,297 @@ public class Packets {
         }
     }
 
+    /**
+     * Server-driven animation playback.
+     *
+     * <p>Separate from {@link AttackAnimation} on purpose. That one is a relay of a swing the client
+     * itself started, so the client deliberately ignores it for the local player to avoid playing the
+     * animation twice. A server-driven animation - a skill, a scripted sequence - has no local
+     * counterpart, and the player performing it is precisely who needs to see it.
+     */
+    public record ForcedAnimation(int playerId, AnimatedHand animatedHand, String animationName,
+                                  float length, float upswing) implements CustomPacketPayload {
+        public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "s2c_play_animation");
+        public static final CustomPacketPayload.Type<ForcedAnimation> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, ForcedAnimation> CODEC = StreamCodec.ofMember(ForcedAnimation::write, ForcedAnimation::read);
+
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeInt(playerId);
+            buffer.writeInt(animatedHand.ordinal());
+            buffer.writeUtf(animationName);
+            buffer.writeFloat(length);
+            buffer.writeFloat(upswing);
+        }
+
+        public static ForcedAnimation read(FriendlyByteBuf buffer) {
+            int playerId = buffer.readInt();
+            var animatedHand = AnimatedHand.values()[buffer.readInt()];
+            String animationName = buffer.readUtf();
+            float length = buffer.readFloat();
+            float upswing = buffer.readFloat();
+            return new ForcedAnimation(playerId, animatedHand, animationName, length, upswing);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
+    /**
+     * Server-driven emote playback.
+     *
+     * <p>Deliberately not a reuse of {@link ForcedAnimation}. Emotes play on their own animation
+     * layer with constant speed, so the two fields that packet carries for combat - the animated
+     * hand and the upswing ratio - have no meaning here, and a shared packet would have to keep
+     * sending values the receiver ignores. Keeping them apart is also what lets a server speak one
+     * feature without the other: a client that never announces this channel simply gets no emotes.
+     *
+     * <p>{@code stop} is a flag rather than a sentinel animation name because there is exactly one
+     * emote layer to stop; the name and length are then ignored.
+     *
+     * <p>{@code hidePose} suppresses the idle weapon pose for the duration. A katana grip is a
+     * looping animation on its own layer, so without this it keeps holding the weapon out while the
+     * emote moves the same arms - the two read as one broken pose. Emotes that should keep the
+     * weapon visible leave it false.
+     *
+     * <p>{@code photoCamera} forces third person and stops the model turning to follow the view, so
+     * the camera can be swung around a held pose without the subject rotating with it.
+     *
+     * <p>{@code keepOnAttack} stops a swing ending the emote on the client. The client cuts its own
+     * emote the instant a swing starts, which is what makes that feel immediate - but an emote the
+     * server intends to keep running has to survive it, or the two sides disagree about what is
+     * playing.
+     *
+     * <p>{@code thirdPerson} pulls the view out without freezing the facing, which is what a line
+     * wants: everyone should see the dance, but only the person steering holds a heading.
+     *
+     * <p>{@code hideItems} leaves the held items undrawn - for a pose whose hands are busy, where
+     * even a well placed weapon reads as a bug.
+     *
+     * <p>{@code cameraHeightOffset} drops the eye the pose drops the head, in blocks. A seated model
+     * whose camera stays at standing height reads as floating above your own body.
+     *
+     * <p>The item anchor, when present, moves the held item off the hand and onto a spot relative to
+     * the torso - the back, the ground, a hip. Only written when set, because most emotes do not use
+     * one and six floats per packet is not free.
+     *
+     * <p>{@code anchorOnly} updates the anchors of an emote already playing without restarting it.
+     * That is what makes tuning an anchor live bearable: retriggering the animation on every nudge
+     * would snap the pose back to its first frame each time.
+     */
+    public record PlayEmote(int playerId, String animationName, float length,
+                            boolean stop, boolean hidePose, boolean photoCamera, boolean hideItems,
+                            boolean thirdPerson, boolean keepOnAttack,
+                            float cameraHeightOffset,
+                            boolean hasItemAnchor, float itemX, float itemY, float itemZ,
+                            float itemPitch, float itemYaw, float itemRoll,
+                            boolean hasOffHandAnchor, float offX, float offY, float offZ,
+                            float offPitch, float offYaw, float offRoll,
+                            boolean anchorOnly)
+            implements CustomPacketPayload {
+        public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "s2c_play_emote");
+        public static final CustomPacketPayload.Type<PlayEmote> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, PlayEmote> CODEC = StreamCodec.ofMember(PlayEmote::write, PlayEmote::read);
+
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeInt(playerId);
+            buffer.writeUtf(animationName);
+            buffer.writeFloat(length);
+            buffer.writeBoolean(stop);
+            buffer.writeBoolean(hidePose);
+            buffer.writeBoolean(photoCamera);
+            buffer.writeBoolean(hideItems);
+            buffer.writeBoolean(thirdPerson);
+            buffer.writeBoolean(keepOnAttack);
+            buffer.writeFloat(cameraHeightOffset);
+            buffer.writeBoolean(hasItemAnchor);
+            if (hasItemAnchor) {
+                buffer.writeFloat(itemX);
+                buffer.writeFloat(itemY);
+                buffer.writeFloat(itemZ);
+                buffer.writeFloat(itemPitch);
+                buffer.writeFloat(itemYaw);
+                buffer.writeFloat(itemRoll);
+            }
+            buffer.writeBoolean(anchorOnly);
+            buffer.writeBoolean(hasOffHandAnchor);
+            if (hasOffHandAnchor) {
+                buffer.writeFloat(offX);
+                buffer.writeFloat(offY);
+                buffer.writeFloat(offZ);
+                buffer.writeFloat(offPitch);
+                buffer.writeFloat(offYaw);
+                buffer.writeFloat(offRoll);
+            }
+        }
+
+        public static PlayEmote read(FriendlyByteBuf buffer) {
+            int playerId = buffer.readInt();
+            String animationName = buffer.readUtf();
+            float length = buffer.readFloat();
+            boolean stop = buffer.readBoolean();
+            boolean hidePose = buffer.readBoolean();
+            boolean photoCamera = buffer.readBoolean();
+            boolean hideItems = buffer.readBoolean();
+            boolean thirdPerson = buffer.readBoolean();
+            boolean keepOnAttack = buffer.readBoolean();
+            float cameraHeightOffset = buffer.readFloat();
+            boolean hasItemAnchor = buffer.readBoolean();
+            float x = 0F, y = 0F, z = 0F, pitch = 0F, yaw = 0F, roll = 0F;
+            if (hasItemAnchor) {
+                x = buffer.readFloat();
+                y = buffer.readFloat();
+                z = buffer.readFloat();
+                pitch = buffer.readFloat();
+                yaw = buffer.readFloat();
+                roll = buffer.readFloat();
+            }
+            boolean anchorOnly = buffer.readBoolean();
+            boolean hasOffHandAnchor = buffer.readBoolean();
+            float ox = 0F, oy = 0F, oz = 0F, opitch = 0F, oyaw = 0F, oroll = 0F;
+            if (hasOffHandAnchor) {
+                ox = buffer.readFloat();
+                oy = buffer.readFloat();
+                oz = buffer.readFloat();
+                opitch = buffer.readFloat();
+                oyaw = buffer.readFloat();
+                oroll = buffer.readFloat();
+            }
+            return new PlayEmote(playerId, animationName, length, stop, hidePose, photoCamera, hideItems, thirdPerson, keepOnAttack,
+                    cameraHeightOffset,
+                    hasItemAnchor, x, y, z, pitch, yaw, roll,
+                    hasOffHandAnchor, ox, oy, oz, opitch, oyaw, oroll, anchorOnly);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
+    /**
+     * The anchor a player positioned in the emote studio, sent back so the server can record it.
+     *
+     * <p>Carries no emote id: the server already knows which emote the player is performing, and
+     * trusting the client to name it would let a stray packet rewrite an unrelated entry.
+     */
+    public record C2S_EmoteAnchor(boolean offHand, float x, float y, float z,
+                                  float pitch, float yaw, float roll) implements CustomPacketPayload {
+        public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "c2s_emote_anchor");
+        public static final CustomPacketPayload.Type<C2S_EmoteAnchor> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, C2S_EmoteAnchor> CODEC =
+                StreamCodec.ofMember(C2S_EmoteAnchor::write, C2S_EmoteAnchor::read);
+
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeBoolean(offHand);
+            buffer.writeFloat(x);
+            buffer.writeFloat(y);
+            buffer.writeFloat(z);
+            buffer.writeFloat(pitch);
+            buffer.writeFloat(yaw);
+            buffer.writeFloat(roll);
+        }
+
+        public static C2S_EmoteAnchor read(FriendlyByteBuf buffer) {
+            return new C2S_EmoteAnchor(buffer.readBoolean(), buffer.readFloat(), buffer.readFloat(),
+                    buffer.readFloat(), buffer.readFloat(), buffer.readFloat(), buffer.readFloat());
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
+    /**
+     * Drives the emote studio from a server command, so it needs no key binding at all.
+     *
+     * <p>Key bindings were the first approach and were the wrong one: every free letter is already
+     * taken by a shader or map mod, and a binding that silently loses a race with another mod looks
+     * exactly like a broken feature.
+     *
+     * @param action 0 toggle, 1 switch hand, 2 save, 3 close
+     */
+    public record S2C_EmoteStudio(int action) implements CustomPacketPayload {
+        public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "s2c_emote_studio");
+        public static final CustomPacketPayload.Type<S2C_EmoteStudio> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, S2C_EmoteStudio> CODEC =
+                StreamCodec.ofMember(S2C_EmoteStudio::write, S2C_EmoteStudio::read);
+
+        public static final int TOGGLE = 0;
+        public static final int SWITCH_HAND = 1;
+        public static final int SAVE = 2;
+        public static final int CLOSE = 3;
+
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeInt(action);
+        }
+
+        public static S2C_EmoteStudio read(FriendlyByteBuf buffer) {
+            return new S2C_EmoteStudio(buffer.readInt());
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
+    /**
+     * Reports whether the anchor studio is open on this client.
+     *
+     * <p>The server needs to know because an emote being adjusted has to be uncancellable: every rule
+     * that normally ends one - a click, a nudge of movement, a stray hit - would otherwise cut the
+     * pose out from under the thing being positioned. Sent by the client rather than assumed from the
+     * command, because the studio can also be closed with escape.
+     */
+    public record C2S_EmoteStudioState(boolean open) implements CustomPacketPayload {
+        public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "c2s_emote_studio_state");
+        public static final CustomPacketPayload.Type<C2S_EmoteStudioState> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, C2S_EmoteStudioState> CODEC =
+                StreamCodec.ofMember(C2S_EmoteStudioState::write, C2S_EmoteStudioState::read);
+
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeBoolean(open);
+        }
+
+        public static C2S_EmoteStudioState read(FriendlyByteBuf buffer) {
+            return new C2S_EmoteStudioState(buffer.readBoolean());
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
+    /**
+     * Reports that the player is looking around without meaning to change where they are going.
+     *
+     * <p>Only the client knows a mouse button is held, and a line steered by the view of whoever is
+     * in front would otherwise swing around every time they turned to look at something.
+     */
+    public record C2S_EmoteFreeLook(boolean active) implements CustomPacketPayload {
+        public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "c2s_emote_free_look");
+        public static final CustomPacketPayload.Type<C2S_EmoteFreeLook> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, C2S_EmoteFreeLook> CODEC =
+                StreamCodec.ofMember(C2S_EmoteFreeLook::write, C2S_EmoteFreeLook::read);
+
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeBoolean(active);
+        }
+
+        public static C2S_EmoteFreeLook read(FriendlyByteBuf buffer) {
+            return new C2S_EmoteFreeLook(buffer.readBoolean());
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
     public record Ack(String code) implements CustomPacketPayload {
         public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "ack");
         public static final CustomPacketPayload.Type<Ack> PACKET_ID = new CustomPacketPayload.Type<>(ID);
@@ -226,6 +517,187 @@ public class Packets {
         @Override
         public Type<? extends CustomPacketPayload> type() {
             return PACKET_ID;
+        }
+    }
+
+    // ===============================================================================================
+    // Client-drawn menus
+    // ===============================================================================================
+
+    /**
+     * Namespace of the menu channels.
+     *
+     * <p>Deliberately not {@code bettercombat}. Everything above belongs to the combat mod's own
+     * protocol, and the emote channels borrow that prefix because the server-side bridge filters
+     * announced channels by it for its handshake and its status report. Menus go through none of
+     * that machinery - a separate plugin owns them and does its own capability check - so taking the
+     * prefix would only make Better Combat's diagnostics claim something that is not theirs.
+     */
+    public static final String MENU_NAMESPACE = "nightfantasy";
+
+    /**
+     * A menu's whole state, sent to open a screen.
+     *
+     * <p>The payload is JSON, chunked and Base64 encoded. Chunking is not premature: {@code writeUtf}
+     * is capped at 32767 bytes, and a menu's contents grow with the server's content, so one string
+     * would work for a year and then stop working all at once. Base64 is what makes the chunking
+     * safe to cut anywhere - splitting a Java string by index cuts between UTF-16 code units, which
+     * lands mid-surrogate for anything outside the basic plane.
+     *
+     * <p><b>The chunk count is a VarInt here</b>, unlike {@link WeaponRegistrySync}, which writes a
+     * plain int. That one mirrors an upstream format; this one is ours and follows the same
+     * convention {@code writeUtf} already uses for its own lengths. Copying the wrong read is the
+     * one mistake that decodes without complaining and produces nonsense.
+     */
+    public record S2C_MenuOpen(String menuId, boolean compressed, List<String> chunks) implements CustomPacketPayload {
+        public static Identifier ID = Identifier.fromNamespaceAndPath(MENU_NAMESPACE, "s2c_menu_open");
+        public static final CustomPacketPayload.Type<S2C_MenuOpen> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, S2C_MenuOpen> CODEC =
+                StreamCodec.ofMember(S2C_MenuOpen::write, S2C_MenuOpen::read);
+
+        public void write(FriendlyByteBuf buffer) {
+            MenuState.write(buffer, menuId, compressed, chunks);
+        }
+
+        public static S2C_MenuOpen read(FriendlyByteBuf buffer) {
+            var state = MenuState.read(buffer);
+            return new S2C_MenuOpen(state.menuId(), state.compressed(), state.chunks());
+        }
+
+        /** The JSON this carried, reassembled. */
+        public String json() {
+            return MenuState.decode(compressed, chunks);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
+    /**
+     * The same state, for a screen that is already open.
+     *
+     * <p>A separate channel rather than a flag on {@link S2C_MenuOpen}, because the difference is
+     * what the client does with it: reopening throws away everything the screen holds of its own - a
+     * scroll position, which page is showing, a drag in progress - and an update does not.
+     */
+    public record S2C_MenuUpdate(String menuId, boolean compressed, List<String> chunks) implements CustomPacketPayload {
+        public static Identifier ID = Identifier.fromNamespaceAndPath(MENU_NAMESPACE, "s2c_menu_update");
+        public static final CustomPacketPayload.Type<S2C_MenuUpdate> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, S2C_MenuUpdate> CODEC =
+                StreamCodec.ofMember(S2C_MenuUpdate::write, S2C_MenuUpdate::read);
+
+        public void write(FriendlyByteBuf buffer) {
+            MenuState.write(buffer, menuId, compressed, chunks);
+        }
+
+        public static S2C_MenuUpdate read(FriendlyByteBuf buffer) {
+            var state = MenuState.read(buffer);
+            return new S2C_MenuUpdate(state.menuId(), state.compressed(), state.chunks());
+        }
+
+        public String json() {
+            return MenuState.decode(compressed, chunks);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
+    /** Closes a named screen, if the client has it open. */
+    public record S2C_MenuClose(String menuId) implements CustomPacketPayload {
+        public static Identifier ID = Identifier.fromNamespaceAndPath(MENU_NAMESPACE, "s2c_menu_close");
+        public static final CustomPacketPayload.Type<S2C_MenuClose> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, S2C_MenuClose> CODEC =
+                StreamCodec.ofMember(S2C_MenuClose::write, S2C_MenuClose::read);
+
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeUtf(menuId);
+        }
+
+        public static S2C_MenuClose read(FriendlyByteBuf buffer) {
+            return new S2C_MenuClose(buffer.readUtf());
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
+    /**
+     * Something happened on a screen - a click, a save, the player closing it.
+     *
+     * <p>{@code closing} is out here rather than inside the JSON because the server's transport
+     * tracks which menu each player has open, and reading that out of the payload would mean parsing
+     * JSON it otherwise never looks at.
+     */
+    public record C2S_MenuAction(String menuId, boolean closing, String actionJson) implements CustomPacketPayload {
+        public static Identifier ID = Identifier.fromNamespaceAndPath(MENU_NAMESPACE, "c2s_menu_action");
+        public static final CustomPacketPayload.Type<C2S_MenuAction> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, C2S_MenuAction> CODEC =
+                StreamCodec.ofMember(C2S_MenuAction::write, C2S_MenuAction::read);
+
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeUtf(menuId);
+            buffer.writeBoolean(closing);
+            buffer.writeUtf(actionJson);
+        }
+
+        public static C2S_MenuAction read(FriendlyByteBuf buffer) {
+            var menuId = buffer.readUtf();
+            var closing = buffer.readBoolean();
+            var actionJson = buffer.readUtf();
+            return new C2S_MenuAction(menuId, closing, actionJson);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
+    /** The wire format shared by the two menu-state packets, so they cannot drift apart. */
+    private record MenuState(String menuId, boolean compressed, List<String> chunks) {
+
+        static void write(FriendlyByteBuf buffer, String menuId, boolean compressed, List<String> chunks) {
+            buffer.writeUtf(menuId);
+            buffer.writeBoolean(compressed);
+            buffer.writeVarInt(chunks.size());
+            for (var chunk : chunks) {
+                buffer.writeUtf(chunk);
+            }
+        }
+
+        static MenuState read(FriendlyByteBuf buffer) {
+            var menuId = buffer.readUtf();
+            var compressed = buffer.readBoolean();
+            var chunkCount = buffer.readVarInt();
+            var chunks = new ArrayList<String>(Math.min(chunkCount, 64));
+            for (int i = 0; i < chunkCount; ++i) {
+                chunks.add(buffer.readUtf());
+            }
+            return new MenuState(menuId, compressed, chunks);
+        }
+
+        /** Concatenate, un-Base64, and ungzip if it was compressed. */
+        static String decode(boolean compressed, List<String> chunks) {
+            var joined = new StringBuilder();
+            for (var chunk : chunks) {
+                joined.append(chunk);
+            }
+            byte[] bytes = java.util.Base64.getDecoder().decode(joined.toString());
+            if (!compressed) {
+                return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+            }
+            try (var gzip = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(bytes))) {
+                return new String(gzip.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            } catch (java.io.IOException failure) {
+                throw new IllegalStateException("Malformed menu payload", failure);
+            }
         }
     }
 }
