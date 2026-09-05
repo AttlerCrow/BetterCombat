@@ -27,7 +27,6 @@ public class FabricClientMod implements ClientModInitializer {
         //     return 1.0F;
         // });
         FabricClientNetwork.init();
-        ClientTickEvents.END_CLIENT_TICK.register(net.bettercombat.client.menu.ClientMenuKeys::tick);
         for (var entry: BetterCombatParticles.ENTRIES) {
             ParticleProviderRegistry.getInstance().register(
                     entry.particleType(), (provider) -> new SlashParticle.Provider(provider, entry.params())

@@ -35,6 +35,5 @@
   "text.autoconfig.bettercombat.option.client.mineWithWeaponBlacklist": "Liste noire de mine avec arme",
   "text.autoconfig.bettercombat.option.client.mineWithWeaponBlacklist.@Tooltip": "Les armes avec un identifiant correspondant à cette expression régulière ne seront jamais utilisées pour récolter des blocs",
   "text.autoconfig.bettercombat.option.client.isDebugOBBEnabled": "Boîte de collision de débogage",
-  "text.autoconfig.bettercombat.option.client.isDebugOBBEnabled.@Tooltip": "Afficher la boîte de collision de l'arme lorsque les boîtes de collision des entités sont affichées",
-  "keybinds.bettercombat.emote_wheel": "Emote wheel"
+  "text.autoconfig.bettercombat.option.client.isDebugOBBEnabled.@Tooltip": "Afficher la boîte de collision de l'arme lorsque les boîtes de collision des entités sont affichées"
 }

@@ -52,18 +52,5 @@ public class FabricClientNetwork {
             ClientNetwork.handleAttackSound(packet);
         });
 
-        ClientPlayNetworking.registerGlobalReceiver(Packets.S2C_MenuOpen.PACKET_ID, (packet, context) -> {
-            net.bettercombat.client.menu.ClientMenuNetwork.handleOpen(packet);
-        });
-
-        ClientPlayNetworking.registerGlobalReceiver(Packets.S2C_MenuUpdate.PACKET_ID, (packet, context) -> {
-            net.bettercombat.client.menu.ClientMenuNetwork.handleUpdate(packet);
-        });
-
-        ClientPlayNetworking.registerGlobalReceiver(Packets.S2C_MenuClose.PACKET_ID, (packet, context) -> {
-            net.bettercombat.client.menu.ClientMenuNetwork.handleClose(packet);
-        });
-
-        net.bettercombat.client.menu.ClientMenuNetwork.setSender(ClientPlayNetworking::send);
     }
 }

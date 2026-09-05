@@ -47,6 +47,5 @@
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations": "Animações em primeira pessoa",
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations.@Tooltip": "Animações de ataque do jogador a serem exibidas. Recomenda-se alterar apenas se estiver usando mods de câmera personalizados.",
   "text.autoconfig.bettercombat.option.client.legAnimationThreshold": "Desativar animações das pernas",
-  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "EXPERIMENTAL: Desativa as animações das pernas ao correr acima desta velocidade",
-  "keybinds.bettercombat.emote_wheel": "Emote wheel"
+  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "EXPERIMENTAL: Desativa as animações das pernas ao correr acima desta velocidade"
 }

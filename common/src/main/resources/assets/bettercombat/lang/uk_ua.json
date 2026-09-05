@@ -48,6 +48,5 @@
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations": "Анімації гравця від першої особи",
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations.@Tooltip": "Анімації атаки гравця, що відображатимуться. Рекомендується змінювати, лише якщо використовуються моди на камеру.",
   "text.autoconfig.bettercombat.option.client.legAnimationThreshold": "Вимкнути анімацію ніг",
-  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "ЕКСПЕРИМЕНТАЛЬНО: Вимикати анімацію ніг під час бігу вище цієї швидкості",
-  "keybinds.bettercombat.emote_wheel": "Emote wheel"
+  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "ЕКСПЕРИМЕНТАЛЬНО: Вимикати анімацію ніг під час бігу вище цієї швидкості"
 }

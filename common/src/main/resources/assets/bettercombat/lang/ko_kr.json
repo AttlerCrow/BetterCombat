@@ -35,6 +35,5 @@
   "text.autoconfig.bettercombat.option.client.mineWithWeaponBlacklist": "무기로 채굴하는 블랙리스트",
   "text.autoconfig.bettercombat.option.client.mineWithWeaponBlacklist.@Tooltip": "이 정규식과 일치하는 ID를 가진 무기는 결코 블록을 채굴하지 않습니다",
   "text.autoconfig.bettercombat.option.client.isDebugOBBEnabled": "디버그 히트박스",
-  "text.autoconfig.bettercombat.option.client.isDebugOBBEnabled.@Tooltip": "개체 히트박스가 표시될 때 무기 히트박스를 표시합니다",
-  "keybinds.bettercombat.emote_wheel": "Emote wheel"
+  "text.autoconfig.bettercombat.option.client.isDebugOBBEnabled.@Tooltip": "개체 히트박스가 표시될 때 무기 히트박스를 표시합니다"
 }

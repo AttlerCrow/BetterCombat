@@ -41,6 +41,5 @@
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations": "Анимация игрока от первого лица",
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations.@Tooltip": "Будет показана анимация атаки игрока. Рекомендуется изменять только в том случае, если используются пользовательские модификации камеры.",
   "text.autoconfig.bettercombat.option.client.legAnimationThreshold": "Отключить анимацию ног",
-  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "ЭКСПЕРИМЕНТАЛЬНО: отключает анимацию ног при беге с такой скоростью",
-  "keybinds.bettercombat.emote_wheel": "Emote wheel"
+  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "ЭКСПЕРИМЕНТАЛЬНО: отключает анимацию ног при беге с такой скоростью"
 }

@@ -72,14 +72,6 @@ public class FabricServerNetwork {
         PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_EmoteStudioState.PACKET_ID, Packets.C2S_EmoteStudioState.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_EmoteFreeLook.PACKET_ID, Packets.C2S_EmoteFreeLook.CODEC);
 
-        // Client menus. Registering the types is what makes the client announce the channels, which
-        // is the only way a Paper server is allowed to send on them - and the only way it can tell a
-        // modded client from a vanilla one.
-        PayloadTypeRegistry.clientboundPlay().register(Packets.S2C_MenuOpen.PACKET_ID, Packets.S2C_MenuOpen.CODEC);
-        PayloadTypeRegistry.clientboundPlay().register(Packets.S2C_MenuUpdate.PACKET_ID, Packets.S2C_MenuUpdate.CODEC);
-        PayloadTypeRegistry.clientboundPlay().register(Packets.S2C_MenuClose.PACKET_ID, Packets.S2C_MenuClose.CODEC);
-        PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_MenuAction.PACKET_ID, Packets.C2S_MenuAction.CODEC);
-
         ServerPlayNetworking.registerGlobalReceiver(Packets.AttackAnimation.PACKET_ID, (packet, context) -> {
             ServerNetwork.handleAttackAnimation(packet, context.server(), context.player());
         });

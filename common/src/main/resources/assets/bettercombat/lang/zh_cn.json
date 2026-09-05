@@ -43,6 +43,5 @@
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations": "第一人称视角攻击动画",
   "text.autoconfig.bettercombat.option.client.firstPersonAnimations.@Tooltip": "以第一人称视角显示攻击动画。只推荐在有自定义摄像机mod的情况下使用。",
   "text.autoconfig.bettercombat.option.client.legAnimationThreshold": "禁用腿部动画",
-  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "实验性：超过此速度时禁用腿部动画",
-  "keybinds.bettercombat.emote_wheel": "Emote wheel"
+  "text.autoconfig.bettercombat.option.client.legAnimationThreshold.@Tooltip": "实验性：超过此速度时禁用腿部动画"
 }

@@ -27,6 +27,5 @@
   "text.autoconfig.bettercombat.option.client.weaponSwingSoundVolume": "Lautstärke des Waffenschwinggeräuschs in Prozent",
   "text.autoconfig.bettercombat.option.client.weaponSwingSoundVolume.@Tooltip": "Ändern Sie die Lautstärke der Waffenschwinggeräusche",
   "text.autoconfig.bettercombat.option.client.isSweepingParticleEnabled": "Show sweeping",
-  "text.autoconfig.bettercombat.option.client.isSweepingParticleEnabled.@Tooltip": "Zeigen Sie die Animation des Schwungschläge",
-  "keybinds.bettercombat.emote_wheel": "Emote wheel"
+  "text.autoconfig.bettercombat.option.client.isSweepingParticleEnabled.@Tooltip": "Zeigen Sie die Animation des Schwungschläge"
 }

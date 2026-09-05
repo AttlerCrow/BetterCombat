@@ -27,6 +27,5 @@
   "text.autoconfig.bettercombat.option.client.weaponSwingSoundVolume": "Porcentaje de volumen del sonido de blandiendo de arma",
   "text.autoconfig.bettercombat.option.client.weaponSwingSoundVolume.@Tooltip": "Cambiar el volumen de los sonidos de blandiendo de armas",
   "text.autoconfig.bettercombat.option.client.isSweepingParticleEnabled": "Mostrar partículas de blandiendo",
-  "text.autoconfig.bettercombat.option.client.isSweepingParticleEnabled.@Tooltip": "Habilitar la visualización de efectos de partículas de blandiendo de espada",
-  "keybinds.bettercombat.emote_wheel": "Rueda de emotes"
+  "text.autoconfig.bettercombat.option.client.isSweepingParticleEnabled.@Tooltip": "Habilitar la visualización de efectos de partículas de blandiendo de espada"
 }
