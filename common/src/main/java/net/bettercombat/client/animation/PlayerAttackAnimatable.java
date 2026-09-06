@@ -47,6 +47,9 @@ public interface PlayerAttackAnimatable {
     /** Whether the emote wants held items not drawn at all. */
     boolean isHidingEmoteItems();
 
+    /** Whether the emote bends the torso, which the cape cannot follow. */
+    boolean isHidingCape();
+
     /** Same, for the off hand. */
     @org.jetbrains.annotations.Nullable EmoteItemAnchor getEmoteOffHandAnchor();
 }

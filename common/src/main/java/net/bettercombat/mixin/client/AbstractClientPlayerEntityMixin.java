@@ -44,6 +44,8 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
     private boolean emotePhotoCamera = false;
     private float emoteCameraHeightOffset = 0F;
     private boolean emoteHidesItems = false;
+    /** Set when the playing emote bends the torso, which the cape cannot follow. */
+    private boolean emoteHidesCape = false;
     private boolean emoteKeepOnAttack = false;
     private float emoteFrozenBodyYaw;
     private boolean emoteFreeLookHeld = false;
@@ -289,6 +291,7 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
         emoteHidesPose = hidePose;
         emoteCameraHeightOffset = cameraHeightOffset;
         emoteHidesItems = hideItems;
+        emoteHidesCape = false;
         emoteKeepOnAttack = keepOnAttack;
         startPhotoCamera(photoCamera || thirdPerson, photoCamera);
         emoteItemAnchor = itemAnchor;
@@ -298,6 +301,13 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
             if (animation == null || length <= 0F) {
                 return;
             }
+
+            // Read off the animation rather than configured per emote. Bending the torso is exactly
+            // the condition the cape cannot survive, so asking the asset is both the right question
+            // and one that keeps answering itself as emotes are added.
+            emoteHidesCape = animation.getBoneOptional("torso")
+                    .map(bone -> !bone.bendKeyFrames().isEmpty())
+                    .orElse(false);
 
             var endTick = animation.data().<Float>get(ExtraAnimationData.END_TICK_KEY).orElse(animation.length());
             // One gear, so the whole emote plays at one speed. The attack path needs two because a
@@ -312,6 +322,11 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
     @Override
     public boolean isHidingEmoteItems() {
         return emoteAnimation.isActive() && emoteHidesItems;
+    }
+
+    @Override
+    public boolean isHidingCape() {
+        return emoteAnimation.isActive() && emoteHidesCape;
     }
 
     @Override
@@ -389,6 +404,7 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
         emoteHidesPose = false;
         emoteCameraHeightOffset = 0F;
         emoteHidesItems = false;
+        emoteHidesCape = false;
         emoteKeepOnAttack = false;
         emoteItemAnchor = null;
         emoteOffHandAnchor = null;

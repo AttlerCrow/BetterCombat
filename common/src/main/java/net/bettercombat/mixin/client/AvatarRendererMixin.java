@@ -29,6 +29,7 @@ public abstract class AvatarRendererMixin<T extends Avatar & ClientAvatarEntity>
             holder.bettercombat$setEmoteItemAnchor(animatable.getEmoteItemAnchor());
             holder.bettercombat$setEmoteOffHandAnchor(animatable.getEmoteOffHandAnchor());
             holder.bettercombat$setHidingEmoteItems(animatable.isHidingEmoteItems());
+            holder.bettercombat$setHidingCape(animatable.isHidingCape());
         }
     }
 }
