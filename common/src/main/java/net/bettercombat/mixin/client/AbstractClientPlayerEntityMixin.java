@@ -325,6 +325,11 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
     }
 
     @Override
+    public boolean isEmoteKeptOnAttack() {
+        return emoteKeepOnAttack;
+    }
+
+    @Override
     public EmoteItemAnchor getEmoteItemAnchor() {
         // Only while something is actually playing: a stale anchor would keep the weapon pinned to
         // the player's back long after the emote ended.

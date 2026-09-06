@@ -47,6 +47,9 @@ public interface PlayerAttackAnimatable {
     /** Whether the emote wants held items not drawn at all. */
     boolean isHidingEmoteItems();
 
+    /** Whether a swing leaves this emote running, which also means no swing is drawn over it. */
+    boolean isEmoteKeptOnAttack();
+
     /** Same, for the off hand. */
     @org.jetbrains.annotations.Nullable EmoteItemAnchor getEmoteOffHandAnchor();
 }
