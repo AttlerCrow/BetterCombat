@@ -18,7 +18,6 @@
   ],
   "client": [
     "client.AbstractClientPlayerEntityMixin",
-    "client.CapeLayerMixin",
     "client.AvatarRenderStateMixin",
     "client.AvatarRendererMixin",
     "client.CameraZoomMixin",

@@ -51,17 +51,4 @@ public class AvatarRenderStateMixin implements EmoteItemAnchorHolder {
     public void bettercombat$setHidingEmoteItems(boolean hiding) {
         this.bettercombat$hidingEmoteItems = hiding;
     }
-
-    @Unique
-    private boolean bettercombat$hidingCape;
-
-    @Override
-    public boolean bettercombat$isHidingCape() {
-        return bettercombat$hidingCape;
-    }
-
-    @Override
-    public void bettercombat$setHidingCape(boolean hiding) {
-        this.bettercombat$hidingCape = hiding;
-    }
 }
