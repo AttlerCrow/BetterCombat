@@ -113,7 +113,12 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
             // This is the whole fix for a pose facing the wrong way on other screens. A watcher
             // derives a body heading from movement, so somebody who turned on the spot and then
             // sat down was drawn still facing wherever they last walked.
-            if (emoteLockBody && emoteAnimation.isActive()) {
+            // Held on our own flag, not on whether the animation library says something is
+            // playing. Asking it was the whole reason this never ran: the heading has to be held
+            // from the moment the packet lands until the emote is stopped, and that window is
+            // ours to know - the library has its own idea of when a layer counts as active, and
+            // on another player it answered no while the pose was plainly on screen.
+            if (emoteLockBody) {
                 player.yBodyRot = emoteBodyYaw;
                 player.yBodyRotO = emoteBodyYaw;
             }
@@ -306,6 +311,19 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
                                    boolean lockBody, float bodyYaw) {
         emoteLockBody = lockBody;
         emoteBodyYaw = bodyYaw;
+        if (lockBody) {
+            // Straight away, and not left to the next tick.
+            var self = (Player) (Object) this;
+            self.yBodyRot = bodyYaw;
+            self.yBodyRotO = bodyYaw;
+            // And this is the one that actually mattered. The photo-camera branch below pins the
+            // body to emoteFrozenBodyYaw, and that field is only ever filled by startPhotoCamera,
+            // which returns early for anybody who is not the local player. On every other screen
+            // it therefore held its default of zero - due south - and pinned the pose there every
+            // tick. Seeding it from the packet gives that branch a real heading for other people
+            // too; the local player still overwrites it a line later with their own.
+            emoteFrozenBodyYaw = bodyYaw;
+        }
         emoteHidesPose = hidePose;
         emoteCameraHeightOffset = cameraHeightOffset;
         emoteHidesItems = hideItems;
