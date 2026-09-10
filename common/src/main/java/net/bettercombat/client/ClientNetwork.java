@@ -108,7 +108,8 @@ public class ClientNetwork {
                         animatable.playEmoteAnimation(packet.animationName(), packet.length(),
                                 packet.hidePose(), packet.photoCamera(), packet.hideItems(), packet.thirdPerson(), packet.keepOnAttack(),
                                 packet.cameraHeightOffset(),
-                                anchor, offAnchor);
+                                anchor, offAnchor,
+                                packet.lockBody(), packet.bodyYaw());
                     }
                 }
             }

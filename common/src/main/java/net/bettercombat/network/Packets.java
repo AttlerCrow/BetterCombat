@@ -296,7 +296,8 @@ public class Packets {
                             float itemPitch, float itemYaw, float itemRoll,
                             boolean hasOffHandAnchor, float offX, float offY, float offZ,
                             float offPitch, float offYaw, float offRoll,
-                            boolean anchorOnly)
+                            boolean anchorOnly,
+                            boolean lockBody, float bodyYaw)
             implements CustomPacketPayload {
         public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "s2c_play_emote");
         public static final CustomPacketPayload.Type<PlayEmote> PACKET_ID = new CustomPacketPayload.Type<>(ID);
@@ -332,6 +333,8 @@ public class Packets {
                 buffer.writeFloat(offYaw);
                 buffer.writeFloat(offRoll);
             }
+            buffer.writeBoolean(lockBody);
+            buffer.writeFloat(bodyYaw);
         }
 
         public static PlayEmote read(FriendlyByteBuf buffer) {
@@ -366,10 +369,13 @@ public class Packets {
                 oyaw = buffer.readFloat();
                 oroll = buffer.readFloat();
             }
+            boolean lockBody = buffer.readBoolean();
+            float bodyYaw = buffer.readFloat();
             return new PlayEmote(playerId, animationName, length, stop, hidePose, photoCamera, hideItems, thirdPerson, keepOnAttack,
                     cameraHeightOffset,
                     hasItemAnchor, x, y, z, pitch, yaw, roll,
-                    hasOffHandAnchor, ox, oy, oz, opitch, oyaw, oroll, anchorOnly);
+                    hasOffHandAnchor, ox, oy, oz, opitch, oyaw, oroll, anchorOnly,
+                    lockBody, bodyYaw);
         }
 
         @Override

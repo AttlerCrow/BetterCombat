@@ -19,14 +19,19 @@ public interface PlayerAttackAnimatable {
      * {@code isLoop}/{@code returnTick} into the animation's loop type, and the trigger path honours
      * it. A looping emote therefore runs until {@link #stopEmoteAnimation()}.
      *
-     * @param length total duration in ticks to fit the animation into; lower is faster
+     * @param length   total duration in ticks to fit the animation into; lower is faster
+     * @param lockBody hold the body at {@code bodyYaw} for as long as this plays. A watcher only
+     *                 ever learns a heading from movement, so a player who turns on the spot and
+     *                 then sits was drawn on every other screen still facing the way they last
+     *                 walked - the pose was right and the direction was somebody else's
      */
     void playEmoteAnimation(String name, float length, boolean hidePose,
                             boolean photoCamera, boolean hideItems, boolean thirdPerson,
                             boolean keepOnAttack,
                             float cameraHeightOffset,
                             @org.jetbrains.annotations.Nullable EmoteItemAnchor itemAnchor,
-                            @org.jetbrains.annotations.Nullable EmoteItemAnchor offHandAnchor);
+                            @org.jetbrains.annotations.Nullable EmoteItemAnchor offHandAnchor,
+                            boolean lockBody, float bodyYaw);
 
     /** Ends whatever emote is playing, including a looping one. */
     void stopEmoteAnimation();

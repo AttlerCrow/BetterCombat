@@ -46,6 +46,9 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
     private boolean emoteHidesItems = false;
     private boolean emoteKeepOnAttack = false;
     private float emoteFrozenBodyYaw;
+    /** The heading the emote was started on, held for everybody watching. */
+    private boolean emoteLockBody = false;
+    private float emoteBodyYaw = 0F;
     private boolean emoteFreeLookHeld = false;
     private net.minecraft.client.CameraType emotePreviousCamera = null;
     private PoseAnimationStack mainHandBodyPose;
@@ -100,6 +103,20 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
             player.yHeadRotO = emoteFrozenBodyYaw;
         } else {
             emoteFreeLookHeld = false;
+            // The heading the emote was started on, held on every client that can see it.
+            //
+            // Only the body, never the head: a seated player should still be able to look around,
+            // and pinning the head would nail their view to the chair. Both the current and the
+            // previous value, or the renderer spends the tick interpolating away from what was
+            // just set and the model wobbles.
+            //
+            // This is the whole fix for a pose facing the wrong way on other screens. A watcher
+            // derives a body heading from movement, so somebody who turned on the spot and then
+            // sat down was drawn still facing wherever they last walked.
+            if (emoteLockBody && emoteAnimation.isActive()) {
+                player.yBodyRot = emoteBodyYaw;
+                player.yBodyRotO = emoteBodyYaw;
+            }
         }
 
         if (scheduledParticles != null && scheduledParticles.time() == player.tickCount) {
@@ -285,7 +302,10 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
                                    boolean photoCamera, boolean hideItems, boolean thirdPerson,
                                    boolean keepOnAttack,
                                    float cameraHeightOffset,
-                                   EmoteItemAnchor itemAnchor, EmoteItemAnchor offHandAnchor) {
+                                   EmoteItemAnchor itemAnchor, EmoteItemAnchor offHandAnchor,
+                                   boolean lockBody, float bodyYaw) {
+        emoteLockBody = lockBody;
+        emoteBodyYaw = bodyYaw;
         emoteHidesPose = hidePose;
         emoteCameraHeightOffset = cameraHeightOffset;
         emoteHidesItems = hideItems;
@@ -392,6 +412,7 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
     public void stopEmoteAnimation() {
         endPhotoCamera();
         emoteHidesPose = false;
+        emoteLockBody = false;
         emoteCameraHeightOffset = 0F;
         emoteHidesItems = false;
         emoteKeepOnAttack = false;
