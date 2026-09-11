@@ -30,6 +30,7 @@
     "client.InGameHudInject",
     "client.ItemInHandLayerMixin",
     "client.ItemStackTooltipMixin",
+    "client.KeyMappingClickMixin",
     "client.MinecraftClientAccessor",
     "client.MinecraftClientInject",
     "client.PlayerFovMixin",

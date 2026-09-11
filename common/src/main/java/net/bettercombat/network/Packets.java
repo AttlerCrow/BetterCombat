@@ -506,6 +506,48 @@ public class Packets {
         }
     }
 
+    /**
+     * One press of the attack or use button, sent as the client sees it.
+     *
+     * <p>This mod owns the mouse: for any registered weapon it cancels {@code Minecraft.startAttack},
+     * so no swing packet and no block action leave the client, and it cancels
+     * {@code Minecraft.startUseItem} during an upswing, so a right click inside one leaves nothing
+     * either. A server that wants to read clicks as <em>input</em> - NightFantasy's skill combos are
+     * typed as sequences of clicks - cannot see them at all unless we say so.
+     *
+     * <p>Sent for the raw press, before any of this mod's rules have run: no weapon check, no attack
+     * cooldown, no target. A press that starts no attack is still a press, and a combo gated on the
+     * weapon's cooldown would drop the middle of a sequence typed quickly.
+     *
+     * <p>{@code button} is 0 for attack and 1 for use. {@code sequence} counts presses this session
+     * so a gap in a server log separates a dropped packet from a player who did not click.
+     */
+    public record C2S_CombatInput(int button, int sequence) implements CustomPacketPayload {
+        public static final int BUTTON_LEFT = 0;
+        public static final int BUTTON_RIGHT = 1;
+
+        public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "c2s_combat_input");
+        public static final CustomPacketPayload.Type<C2S_CombatInput> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, C2S_CombatInput> CODEC =
+                StreamCodec.ofMember(C2S_CombatInput::write, C2S_CombatInput::read);
+
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeVarInt(button);
+            buffer.writeVarInt(sequence);
+        }
+
+        public static C2S_CombatInput read(FriendlyByteBuf buffer) {
+            int button = buffer.readVarInt();
+            int sequence = buffer.readVarInt();
+            return new C2S_CombatInput(button, sequence);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
     public record Ack(String code) implements CustomPacketPayload {
         public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "ack");
         public static final CustomPacketPayload.Type<Ack> PACKET_ID = new CustomPacketPayload.Type<>(ID);

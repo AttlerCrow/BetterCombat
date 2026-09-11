@@ -71,6 +71,9 @@ public class FabricServerNetwork {
         PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_EmoteAnchor.PACKET_ID, Packets.C2S_EmoteAnchor.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_EmoteStudioState.PACKET_ID, Packets.C2S_EmoteStudioState.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_EmoteFreeLook.PACKET_ID, Packets.C2S_EmoteFreeLook.CODEC);
+        // Raw button presses. Send-only from the client's side: a plugin server reads them, a modded
+        // server has no use for them, so nothing registers a receiver.
+        PayloadTypeRegistry.serverboundPlay().register(Packets.C2S_CombatInput.PACKET_ID, Packets.C2S_CombatInput.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(Packets.AttackAnimation.PACKET_ID, (packet, context) -> {
             ServerNetwork.handleAttackAnimation(packet, context.server(), context.player());

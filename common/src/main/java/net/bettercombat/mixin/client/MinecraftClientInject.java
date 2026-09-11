@@ -31,6 +31,7 @@ public abstract class MinecraftClientInject implements MinecraftClient_BetterCom
     @Inject(method = "clearDownloadedResourcePacks", at = @At("TAIL"))
     private void disconnect_TAIL(CallbackInfo ci) {
         interactor().onDisconnected();
+        net.bettercombat.client.CombatInputReporter.reset();
     }
 
     // Press to attack
@@ -59,6 +60,9 @@ public abstract class MinecraftClientInject implements MinecraftClient_BetterCom
     // HEAD: must run before vanilla decrements `attackCooldown`/`itemUseCooldown` and processes input for this tick
     @Inject(method = "tick", at = @At("HEAD"))
     private void pre_Tick(CallbackInfo ci) {
+        // Before `handleKeybinds` acts on the same presses, so the server receives the click ahead of
+        // whatever vanilla packet it also produces. See CombatInputReporter.
+        net.bettercombat.client.CombatInputReporter.flush();
         interactor().preTick();
     }
 
