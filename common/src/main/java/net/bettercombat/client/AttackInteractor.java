@@ -135,6 +135,15 @@ public class AttackInteractor {
         if (!BetterCombatClientMod.ENABLED) { return false; }
         if (CombatFlags.isAttackDisabled(client.player)) { return false; }
 
+        var player = client.player;
+        if (player != null && (player.getMainHandItem().has(net.minecraft.core.component.DataComponents.BLOCKS_ATTACKS)
+                || player.getOffhandItem().has(net.minecraft.core.component.DataComponents.BLOCKS_ATTACKS))) {
+            if (ongoingSwing != null) {
+                cancelWeaponSwing();
+            }
+            return false;
+        }
+
         var hand = getCurrentHand();
         if (hand == null) { return false; }
         double upswingRate = hand.upswingRate();
@@ -148,6 +157,10 @@ public class AttackInteractor {
         }
         targetsInReach = null;
         lastAttacked += 1;
+
+        // Lets a server-imposed attack block run out on its own, so a release packet that never
+        // arrives cannot leave the player unable to swing for the rest of the session.
+        ClientNetwork.tickCombatState();
 
         if (CombatFlags.isAttackDisabled(player)) {
             // Cancel any in-flight swing, so vanilla input resumes cleanly

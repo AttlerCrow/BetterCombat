@@ -48,6 +48,62 @@ public class ClientNetwork {
     }
 
     /**
+     * The tick at which a server-imposed attack block runs out, or {@code 0} when none is running.
+     *
+     * <p>Counted down locally rather than waited on. A release packet can be lost, and the server
+     * can stop in the middle of a stun; either way the client would otherwise be left unable to
+     * swing with nothing coming to fix it, which is far worse than letting a block end a tick early.
+     */
+    private static long attacksDisabledUntilTick = 0L;
+
+    /**
+     * Applies the server's answer to "may this client attack right now".
+     *
+     * <p>Sets the mod's own {@code API_DISABLED} flag, which {@code AttackInteractor} has always
+     * checked before starting a swing. On a Paper server nothing ever set it - upstream syncs it
+     * through a data attachment only a modded server writes - so this is what finally makes those
+     * guards do something.
+     *
+     * <p>Comfort, not enforcement: the server refuses the swing regardless, and a player without
+     * this mod never receives the packet. What it buys is that a stunned player sees nothing happen
+     * instead of watching their character swing through a hit that is quietly discarded.
+     */
+    public static void handleCombatState(Packets.CombatState packet) {
+        var client = Minecraft.getInstance();
+        client.execute(() -> {
+            if (client.player == null || client.level == null) {
+                return;
+            }
+            attacksDisabledUntilTick = packet.attacksDisabled()
+                    ? client.level.getGameTime() + Math.max(1, packet.durationTicks())
+                    : 0L;
+            setAttacksDisabled(client.player, packet.attacksDisabled());
+        });
+    }
+
+    /** Lets a block expire on its own. Called once a tick from the attack loop. */
+    public static void tickCombatState() {
+        var client = Minecraft.getInstance();
+        if (attacksDisabledUntilTick == 0L || client.player == null || client.level == null) {
+            return;
+        }
+        if (client.level.getGameTime() >= attacksDisabledUntilTick) {
+            attacksDisabledUntilTick = 0L;
+            setAttacksDisabled(client.player, false);
+        }
+    }
+
+    private static void setAttacksDisabled(Player player, boolean disabled) {
+        var flags = net.bettercombat.api.CombatFlags.get(player);
+        byte updated = (byte) (disabled
+                ? (flags | net.bettercombat.api.CombatFlags.API_DISABLED)
+                : (flags & ~net.bettercombat.api.CombatFlags.API_DISABLED));
+        if (updated != flags) {
+            Platform.playerAttachments().setCombatFlags(player, updated);
+        }
+    }
+
+    /**
      * Plays an animation the server asked for, on any player including the local one.
      *
      * <p>Deliberately without the {@code player != client.player} guard that
@@ -66,8 +122,11 @@ public class ClientNetwork {
                 if (packet.animationName().equals(Packets.AttackAnimation.StopSymbol)) {
                     animatable.stopAttackAnimation(packet.length());
                 } else {
-                    animatable.playAttackAnimation(
+                    animatable.playForcedAnimation(
                             packet.animationName(), packet.animatedHand(), packet.length(), packet.upswing());
+                    // After, because starting an attack animation clears the mark: everything this
+                    // channel carries is a skill or a dodge, which animates the whole body.
+                    animatable.markSkillAnimation(packet.length());
                 }
             }
         });

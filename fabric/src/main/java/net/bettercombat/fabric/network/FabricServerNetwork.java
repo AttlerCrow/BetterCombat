@@ -61,6 +61,7 @@ public class FabricServerNetwork {
         PayloadTypeRegistry.clientboundPlay().register(Packets.ConfigSync.PACKET_ID, Packets.ConfigSync.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Packets.WeaponRegistrySync.PACKET_ID, Packets.WeaponRegistrySync.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Packets.ForcedAnimation.PACKET_ID, Packets.ForcedAnimation.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(Packets.CombatState.PACKET_ID, Packets.CombatState.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Packets.PlayEmote.PACKET_ID, Packets.PlayEmote.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Packets.S2C_EmoteStudio.PACKET_ID, Packets.S2C_EmoteStudio.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(Packets.AttackSound.PACKET_ID, Packets.AttackSound.CODEC);

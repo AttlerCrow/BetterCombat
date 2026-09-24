@@ -44,7 +44,7 @@ public final class EmfEmotePause {
 
         Function<Object, Boolean> whileEmoting = entity -> {
             try {
-                return isEmoting((UUID) getUuid.invoke(entity));
+                return ownsWholeBody((UUID) getUuid.invoke(entity));
             } catch (ReflectiveOperationException | ClassCastException failure) {
                 // Never answer yes to a question we could not evaluate: a stuck condition would
                 // freeze the pack's own model for good, which is worse than the conflict it fixes.
@@ -79,23 +79,24 @@ public final class EmfEmotePause {
     }
 
     /**
-     * Whether the player is playing an emote, as opposed to any other animation the library happens
-     * to be running. {@code EmfPalCompatMixin} needs the same distinction, which is the whole point
-     * of the emote channel being a separate layer.
+     * Whether an animation owns the player's whole body right now - an emote, or a skill or dodge the
+     * server drove - as opposed to a weapon grip or a swing, which only move the arms.
+     * {@code EmfPalCompatMixin} needs the same distinction.
+     *
+     * <p>Skill animations count because they are performances like an emote: a crouch, a leap, a spin.
+     * Left to EMF, a pack such as Fresh Animations keeps its own model and its own legs and torso, and
+     * of the skill only the arms arrive - a samurai stance drawn as a man standing with his sword up.
      */
-    public static boolean isEmoting(UUID playerId) {
+    public static boolean ownsWholeBody(UUID playerId) {
         Minecraft client = Minecraft.getInstance();
         // The player being drawn is almost always the one holding the camera, and getPlayerByUUID
         // walks the player list. On a busy server that turned this into an O(players) scan run for
         // every bone of every armor piece each frame, so the common case answers without it.
         Player self = client.player;
-        if (self != null && self.getUUID().equals(playerId)) {
-            return self instanceof PlayerAttackAnimatable animatable && animatable.isEmoteActive();
-        }
-        if (client.level == null) {
-            return false;
-        }
-        Player player = client.level.getPlayerByUUID(playerId);
-        return player instanceof PlayerAttackAnimatable animatable && animatable.isEmoteActive();
+        Player player = self != null && self.getUUID().equals(playerId)
+                ? self
+                : client.level == null ? null : client.level.getPlayerByUUID(playerId);
+        return player instanceof PlayerAttackAnimatable animatable
+                && (animatable.isEmoteActive() || animatable.isSkillAnimationActive());
     }
 }

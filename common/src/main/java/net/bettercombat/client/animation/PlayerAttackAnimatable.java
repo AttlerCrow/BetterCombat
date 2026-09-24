@@ -9,6 +9,18 @@ import java.util.List;
 public interface PlayerAttackAnimatable {
     void updateAnimationsOnTick();
     void playAttackAnimation(String name, AnimatedHand hand, float length, float upswing);
+
+    /**
+     * {@link #playAttackAnimation}, for an animation the server sent: when another is already playing
+     * on the attack layer, the new one fades in from the pose on screen instead of starting from rest.
+     *
+     * <p>A triggered animation begins at tick zero, and before its first keyframe that is the rest
+     * pose. Two server animations back to back - a parry attempt followed by the held guard, a guard
+     * followed by the recoil of a blocked hit - therefore dropped the arms for a frame and raised them
+     * again, which read as the move firing twice. Swings keep the hard start: their own combos are
+     * authored for it, and a fade would soften every hit.
+     */
+    void playForcedAnimation(String name, AnimatedHand hand, float length, float upswing);
     void playAttackParticles(boolean isOffHand, float weaponRange, int delay, List<ParticlePlacement> particles, TrailAppearance appearance);
     void stopAttackAnimation(float length);
 
@@ -41,6 +53,33 @@ public interface PlayerAttackAnimatable {
 
     /** Whether an emote is playing right now, for compatibility layers that need to stand aside. */
     boolean isEmoteActive();
+
+    /**
+     * Marks the attack animation just started as one the server drove for a skill or a dodge, for
+     * {@code lengthTicks}.
+     *
+     * <p>A swing and a skill share the attack layer, but not what they animate: a swing moves the
+     * arms and leaves the body to whatever model pack is installed, while a skill animation is a
+     * whole-body performance - a crouch, a leap, a spin - exactly like an emote. Compatibility layers
+     * ask {@link #isSkillAnimationActive()} to tell the two apart. A swing started afterwards, or a
+     * stop, clears the mark.
+     */
+    void markSkillAnimation(float lengthTicks);
+
+    /** Whether a server-driven skill animation owns the whole body right now. */
+    boolean isSkillAnimationActive();
+
+    /**
+     * Whether this player's emote pins them in place - {@code lock-position} on the server - from the
+     * packet until the emote is stopped, outro included. Unlike {@link #isEmoteActive()} it is also
+     * true for other players while their pose is on screen.
+     */
+    boolean isEmotePinned();
+
+    /** How far the model is tipped along its flight path, degrees nose down; see {@link DashAimHolder}. */
+    default float getDashAimPitch(float partialTick) {
+        return 0F;
+    }
 
     /** Where the held item should sit right now, or null to leave it in the hand. */
     @org.jetbrains.annotations.Nullable EmoteItemAnchor getEmoteItemAnchor();

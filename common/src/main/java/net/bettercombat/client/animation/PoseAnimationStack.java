@@ -90,7 +90,9 @@ public class PoseAnimationStack extends PlayerAnimationController {
         } else {
             var animation = PlayerAnimResources.getAnimation(Identifier.parse(animationId));
             this.mirror.enabled = mirror;
-            this.triggerAnimation(animation);
+            // From tick 1, the pose's first keyframe. Tick 0 is before any keyframe - the rest pose -
+            // so a pose put back after swimming, climbing or a swing flashed the arm down for a frame.
+            this.triggerAnimation(animation, 1F);
         }
 
         lastPose = newPoseData;

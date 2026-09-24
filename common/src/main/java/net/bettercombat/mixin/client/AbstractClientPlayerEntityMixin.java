@@ -51,6 +51,12 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
     private float emoteBodyYaw = 0F;
     private boolean emoteFreeLookHeld = false;
     private net.minecraft.client.CameraType emotePreviousCamera = null;
+    /**
+     * Last tick of the skill animation playing on the attack layer, or -1 when what is playing is a
+     * plain swing (or nothing). A tick count and not the layer's own state, which on another player
+     * has answered inactive while the animation was plainly on screen.
+     */
+    private int skillAnimationEndTick = -1;
     private PoseAnimationStack mainHandBodyPose;
     private PoseAnimationStack mainHandItemPose;
     private PoseAnimationStack offHandBodyPose;
@@ -73,10 +79,18 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
         offHandItemPose = (PoseAnimationStack) PlayerAnimationAccess.getPlayerAnimationLayer(player, PoseAnimationStack.OFF_HAND_ITEM_ID);
     }
 
+    /** Flight-path aim, degrees nose down, this tick and last; see {@link net.bettercombat.client.animation.DashAimHolder}. */
+    @org.spongepowered.asm.mixin.Unique
+    private float bettercombat$dashAim, bettercombat$dashAimO;
+    /** How quickly the aim follows the flight path, and lets go of it after, per tick. */
+    @org.spongepowered.asm.mixin.Unique
+    private static final float DASH_AIM_FOLLOW = 0.35F;
+
     @Override
     public void updateAnimationsOnTick() {
         var instance = (Object)this;
         var player = (Player)instance;
+        bettercombat$tickDashAim(player);
         var isLeftHanded = isLeftHanded();
         var hasActiveAttackAnimation = attackAnimation.isActive(); // attackAnimation.base.getAnimation() != null && attackAnimation.base.getAnimation().isActive();
         var mainHandStack = player.getMainHandItem();
@@ -129,9 +143,14 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
             scheduledParticles = null;
         }
 
+        // Holding up a weapon that blocks - a parrying katana - is not an activity that replaces the
+        // grip: it is the grip. Clearing the pose for it meant letting go restarted the pose from its
+        // empty first tick, and for a frame the arm hung at rest with the blade pointing at the ground.
+        boolean guardingWithWeapon = player.isUsingItem()
+                && player.getUseItem().has(net.minecraft.core.component.DataComponents.BLOCKS_ATTACKS);
         if (player.swinging // Official mapping name: `isHandBusy`
                 || player.isSwimming()
-                || player.isUsingItem()
+                || (player.isUsingItem() && !guardingWithWeapon)
                 || player.onClimbable()
                 || player.isFallFlying()
                 || Platform.isCastingSpell(player)
@@ -221,6 +240,30 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
 
     @Override
     public void playAttackAnimation(String name, AnimatedHand animatedHand, float length, float upswing) {
+        startAttackAnimation(name, animatedHand, length, upswing, false);
+    }
+
+    @Override
+    public void playForcedAnimation(String name, AnimatedHand animatedHand, float length, float upswing) {
+        startAttackAnimation(name, animatedHand, length, upswing, true);
+    }
+
+    /** Ticks a server animation takes to blend in from the one it replaces. */
+    @Unique
+    private static final int FORCED_ANIMATION_FADE_TICKS = 3;
+
+    /**
+     * Ticks an emote takes to blend in when it replaces one still playing. A held pose that changes
+     * state - a glide turning into a dive - would otherwise restart from rest and drop the arms.
+     */
+    @Unique
+    private static final int EMOTE_SWITCH_FADE_TICKS = 4;
+
+    @Unique
+    private void startAttackAnimation(String name, AnimatedHand animatedHand, float length, float upswing,
+                                      boolean fadeFromCurrent) {
+        // Whatever plays next is a swing until the forced-animation path says otherwise.
+        skillAnimationEndTick = -1;
         // A swing always wins over an emote. Cancelling here rather than relying on layer priority
         // keeps it instant - no round trip to the server - and covers the swing the client started
         // itself, which the server never hears about until the attack request lands.
@@ -260,7 +303,14 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
                             new TransmissionSpeedModifier.Gear(length, speed)
                     ));
 
-            controller.triggerAnimation(animation);
+            if (fadeFromCurrent && controller.isActive()) {
+                controller.replaceAnimationWithFade(
+                        com.zigythebird.playeranimcore.animation.layered.modifier.AbstractFadeModifier.standardFadeIn(
+                                FORCED_ANIMATION_FADE_TICKS, com.zigythebird.playeranimcore.easing.EasingType.EASE_OUT_QUAD),
+                        animation);
+            } else {
+                controller.triggerAnimation(animation);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -297,6 +347,7 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
     @Override
     public void stopAttackAnimation(float length) {
         scheduledParticles = null;
+        skillAnimationEndTick = -1;
         if (attackAnimation.isActive()) {
             attackAnimation.stop();
         }
@@ -341,7 +392,15 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
             // One gear, so the whole emote plays at one speed. The attack path needs two because a
             // swing has an impact point; an emote does not.
             emoteAnimation.speed.set(endTick / length, List.of());
-            emoteAnimation.triggerAnimation(animation);
+            if (emoteAnimation.isActive()) {
+                // Pose to pose, not through rest: the new emote fades in from what is on screen.
+                emoteAnimation.replaceAnimationWithFade(
+                        com.zigythebird.playeranimcore.animation.layered.modifier.AbstractFadeModifier.standardFadeIn(
+                                EMOTE_SWITCH_FADE_TICKS, com.zigythebird.playeranimcore.easing.EasingType.EASE_IN_OUT_QUAD),
+                        animation);
+            } else {
+                emoteAnimation.triggerAnimation(animation);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -363,11 +422,64 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
     }
 
     @Override
+    public void markSkillAnimation(float lengthTicks) {
+        skillAnimationEndTick = this.tickCount + (int) Math.ceil(Math.max(0F, lengthTicks)) + 1;
+    }
+
+    @Override
+    public boolean isSkillAnimationActive() {
+        return skillAnimationEndTick >= 0 && this.tickCount <= skillAnimationEndTick;
+    }
+
+    @Override
+    public boolean isEmotePinned() {
+        // Our flag, not the library's active layer, for the same reason as the facing: it is set when
+        // the packet lands and cleared in stopEmoteAnimation. That is the window the server holds the
+        // pin, outro included - the outro arrives with the flag too, and the final stop is sent by the
+        // same task that releases the lock.
+        return emoteLockBody;
+    }
+
+    @Override
     public boolean isEmoteKeptOnAttack() {
         return emoteKeepOnAttack;
     }
 
     @Override
+    public float getDashAimPitch(float partialTick) {
+        return net.minecraft.util.Mth.lerp(partialTick, bettercombat$dashAimO, bettercombat$dashAim);
+    }
+
+    /**
+     * Follows the direction the player is actually flying, while an emote asks for it: the pitch of
+     * the line of this tick's movement, eased in. The line, not the arrow: flying backwards, feet
+     * first, the body lies along the path the same way, so rising while going back puts the head
+     * down. Out of such an emote it eases back to level instead of snapping, so the dash hands over
+     * to the glide without a jolt. Movement is read from the entity's own positions, so it works
+     * the same for every player on screen.
+     */
+    @org.spongepowered.asm.mixin.Unique
+    private void bettercombat$tickDashAim(Player player) {
+        bettercombat$dashAimO = bettercombat$dashAim;
+        float target = 0F;
+        if (emoteAnimation.isActive() && emoteAnimation.wantsDashAim()) {
+            double dx = player.getX() - player.xo;
+            double dy = player.getY() - player.yo;
+            double dz = player.getZ() - player.zo;
+            // Movement along the way the body faces: negative flying backwards.
+            double yaw = Math.toRadians(player.yBodyRot);
+            double along = -Math.sin(yaw) * dx + Math.cos(yaw) * dz;
+            // Barely moving says nothing about a direction; hold what there is.
+            if (along * along + dy * dy > 0.01D) {
+                target = (float) Math.toDegrees(Math.atan2(along >= 0 ? -dy : dy, Math.abs(along)));
+            } else {
+                target = bettercombat$dashAim;
+            }
+            target = net.minecraft.util.Mth.clamp(target, -80F, 80F);
+        }
+        bettercombat$dashAim += (target - bettercombat$dashAim) * DASH_AIM_FOLLOW;
+    }
+
     public EmoteItemAnchor getEmoteItemAnchor() {
         // Only while something is actually playing: a stale anchor would keep the weapon pinned to
         // the player's back long after the emote ended.

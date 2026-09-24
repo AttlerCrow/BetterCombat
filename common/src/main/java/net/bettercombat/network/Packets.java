@@ -217,6 +217,40 @@ public class Packets {
      * animation twice. A server-driven animation - a skill, a scripted sequence - has no local
      * counterpart, and the player performing it is precisely who needs to see it.
      */
+    /**
+     * Tells one client whether it may attack, and for how long it may not.
+     *
+     * <p>The guards that read this have always been in {@code AttackInteractor}; what never existed
+     * on a Paper server was anything to set the flag they read. Upstream carries it in a data
+     * attachment synced by a modded server, so on Paper the client's flags were permanently zero and
+     * those guards never fired. This packet is the missing half.
+     *
+     * <p>{@code durationTicks} is how long the server expects the block to last. The client counts it
+     * down itself so that a lost release packet, or a server that stopped mid-stun, cannot leave
+     * somebody unable to swing until they restart the game.
+     */
+    public record CombatState(boolean attacksDisabled, int durationTicks) implements CustomPacketPayload {
+        public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "s2c_combat_state");
+        public static final CustomPacketPayload.Type<CombatState> PACKET_ID = new CustomPacketPayload.Type<>(ID);
+        public static final StreamCodec<FriendlyByteBuf, CombatState> CODEC = StreamCodec.ofMember(CombatState::write, CombatState::read);
+
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeBoolean(attacksDisabled);
+            buffer.writeInt(durationTicks);
+        }
+
+        public static CombatState read(FriendlyByteBuf buffer) {
+            boolean attacksDisabled = buffer.readBoolean();
+            int durationTicks = buffer.readInt();
+            return new CombatState(attacksDisabled, durationTicks);
+        }
+
+        @Override
+        public Type<? extends CustomPacketPayload> type() {
+            return PACKET_ID;
+        }
+    }
+
     public record ForcedAnimation(int playerId, AnimatedHand animatedHand, String animationName,
                                   float length, float upswing) implements CustomPacketPayload {
         public static Identifier ID = Identifier.fromNamespaceAndPath(BetterCombatMod.ID, "s2c_play_animation");

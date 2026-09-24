@@ -36,6 +36,10 @@ public class FabricClientNetwork {
             ClientNetwork.handleForcedAnimation(packet);
         });
 
+        ClientPlayNetworking.registerGlobalReceiver(Packets.CombatState.PACKET_ID, (packet, context) -> {
+            ClientNetwork.handleCombatState(packet);
+        });
+
         ClientPlayNetworking.registerGlobalReceiver(Packets.PlayEmote.PACKET_ID, (packet, context) -> {
             ClientNetwork.handlePlayEmote(packet);
         });

@@ -2,6 +2,7 @@ package net.bettercombat.mixin.client;
 
 import net.bettercombat.BetterCombatMod;
 import net.bettercombat.api.MinecraftClient_BetterCombat;
+import net.bettercombat.client.animation.PlayerAttackAnimatable;
 import net.bettercombat.client.misc.ItemStackViewerPlayer;
 import net.bettercombat.utils.MathHelper;
 import net.minecraft.client.Minecraft;
@@ -14,6 +15,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LocalPlayer.class)
 public abstract class ClientPlayerEntityMixin implements ItemStackViewerPlayer {
@@ -55,6 +57,27 @@ public abstract class ClientPlayerEntityMixin implements ItemStackViewerPlayer {
             }
             clientPlayer.zza *= multiplier;
             clientPlayer.xxa *= multiplier;
+        }
+    }
+
+    /**
+     * A pinned pose makes sprinting impossible, the way blindness does.
+     *
+     * <p>The server clears sprinting when it pins a player, and that is not enough: vanilla starts it
+     * again on the next tick whenever the sprint key is down and forward is held, and since the client
+     * never saw itself stop, it sends nothing. The player sprinted on their own screen only, trailing
+     * sprint particles from a seated model until they let go of forward.
+     *
+     * <p>{@code isSprintingPossible} is the one question behind both halves: it ends a sprint already
+     * running ({@code shouldStopRunSprinting}, {@code shouldStopSwimSprinting}) and refuses a new one
+     * ({@code canStartSprinting}). Answering it, rather than clearing the flag after the fact, lets
+     * vanilla stop the sprint itself and send the matching packet, so the server and every viewer
+     * agree.
+     */
+    @Inject(method = "isSprintingPossible", at = @At("HEAD"), cancellable = true)
+    private void bettercombat$noSprintWhilePinned(boolean flying, CallbackInfoReturnable<Boolean> cir) {
+        if (((PlayerAttackAnimatable) this).isEmotePinned()) {
+            cir.setReturnValue(false);
         }
     }
 

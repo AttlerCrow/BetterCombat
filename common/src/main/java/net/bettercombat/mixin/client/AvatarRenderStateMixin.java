@@ -1,6 +1,7 @@
 package net.bettercombat.mixin.client;
 
 import net.bettercombat.client.animation.EmoteItemAnchor;
+import net.bettercombat.client.animation.DashAimHolder;
 import net.bettercombat.client.animation.EmoteItemAnchorHolder;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import org.jetbrains.annotations.Nullable;
@@ -9,7 +10,20 @@ import org.spongepowered.asm.mixin.Unique;
 
 /** Storage for {@link EmoteItemAnchorHolder} on the player's render state. */
 @Mixin(AvatarRenderState.class)
-public class AvatarRenderStateMixin implements EmoteItemAnchorHolder {
+public class AvatarRenderStateMixin implements EmoteItemAnchorHolder, DashAimHolder {
+
+    @Unique
+    private float bettercombat$dashAim;
+
+    @Override
+    public float bettercombat$getDashAim() {
+        return bettercombat$dashAim;
+    }
+
+    @Override
+    public void bettercombat$setDashAim(float degrees) {
+        this.bettercombat$dashAim = degrees;
+    }
 
     @Unique
     @Nullable

@@ -32,8 +32,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * short enough that nobody notices - which is exactly why the bug looked like it belonged to the
  * grip rather than to animations in general.
  *
- * <p>So the condition is narrowed to what it was meant to catch: an emote. Grips and attacks leave
- * EMF in charge of the body, which is the arrangement {@code emf_compat_better_combat} already
+ * <p>So the condition is narrowed to what it was meant to catch: an animation that owns the whole
+ * body - an emote, or a skill or dodge the server drove (see {@link EmfEmotePause#ownsWholeBody}).
+ * Grips and swings leave EMF in charge of the body, which is the arrangement {@code emf_compat_better_combat} already
  * assumes - it exists to re-apply Better Combat's arm pose <em>after</em> EMF has animated.
  *
  * <p>{@code @Coerce} carries the entity as a bare {@link Object} because EMF is not on this mod's
@@ -47,7 +48,7 @@ public abstract class EmfPalCompatMixin {
     private static void bettercombat$onlyEmotesTakeOverTheModel(@Coerce Object entity,
                                                                 CallbackInfoReturnable<Boolean> cir) {
         java.util.UUID id = EmfArmorModelBridge.uuidOf(entity);
-        if (id != null && !EmfEmotePause.isEmoting(id)) {
+        if (id != null && !EmfEmotePause.ownsWholeBody(id)) {
             cir.setReturnValue(false);
         }
     }
