@@ -84,6 +84,14 @@ public interface PlayerAttackAnimatable {
     /** Where the held item should sit right now, or null to leave it in the hand. */
     @org.jetbrains.annotations.Nullable EmoteItemAnchor getEmoteItemAnchor();
 
+    /**
+     * {@link #getEmoteItemAnchor()} as drawn this frame: when an emote replaced another with a
+     * different anchor, the item travels between the two over the pose's own fade.
+     */
+    default @org.jetbrains.annotations.Nullable EmoteItemAnchor getEmoteItemAnchor(float partialTick) {
+        return getEmoteItemAnchor();
+    }
+
     /** Moves the item of an emote already playing, without restarting the animation. */
     void updateEmoteItemAnchors(@org.jetbrains.annotations.Nullable EmoteItemAnchor itemAnchor,
                                 @org.jetbrains.annotations.Nullable EmoteItemAnchor offHandAnchor);

@@ -380,6 +380,13 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
         emoteHidesItems = hideItems;
         emoteKeepOnAttack = keepOnAttack;
         startPhotoCamera(photoCamera || thirdPerson, photoCamera);
+        // Pose to pose, the item too: an emote replacing another fades in over a few ticks, and an
+        // anchor that jumped at once left the item a beat ahead of the body - the glider snapping
+        // level before the flyer had tipped over into it.
+        EmoteItemAnchor anchorBefore = emoteAnimation.isActive() ? getEmoteItemAnchor(0F) : null;
+        bettercombat$anchorFrom = anchorBefore != null && itemAnchor != null && !anchorBefore.equals(itemAnchor)
+                ? anchorBefore : null;
+        bettercombat$anchorBlendStart = this.tickCount;
         emoteItemAnchor = itemAnchor;
         emoteOffHandAnchor = offHandAnchor;
         try {
@@ -484,6 +491,36 @@ public abstract class AbstractClientPlayerEntityMixin extends Player implements 
         // Only while something is actually playing: a stale anchor would keep the weapon pinned to
         // the player's back long after the emote ended.
         return emoteAnimation.isActive() ? emoteItemAnchor : null;
+    }
+
+    /** The anchor an emote switch is blending from, and the tick the blend began. */
+    @org.spongepowered.asm.mixin.Unique
+    private EmoteItemAnchor bettercombat$anchorFrom;
+    @org.spongepowered.asm.mixin.Unique
+    private float bettercombat$anchorBlendStart;
+
+    @Override
+    public EmoteItemAnchor getEmoteItemAnchor(float partialTick) {
+        EmoteItemAnchor to = getEmoteItemAnchor();
+        EmoteItemAnchor from = bettercombat$anchorFrom;
+        if (to == null || from == null) {
+            return to;
+        }
+        float t = (this.tickCount + partialTick - bettercombat$anchorBlendStart) / EMOTE_SWITCH_FADE_TICKS;
+        if (t >= 1F) {
+            bettercombat$anchorFrom = null;
+            return to;
+        }
+        t = Math.max(0F, t);
+        // The fade's own curve, ease-in-out quad, so the item and the body arrive together.
+        float e = t < 0.5F ? 2F * t * t : 1F - (float) Math.pow(-2F * t + 2F, 2) / 2F;
+        return new EmoteItemAnchor(
+                net.minecraft.util.Mth.lerp(e, from.x(), to.x()),
+                net.minecraft.util.Mth.lerp(e, from.y(), to.y()),
+                net.minecraft.util.Mth.lerp(e, from.z(), to.z()),
+                net.minecraft.util.Mth.lerp(e, from.pitch(), to.pitch()),
+                net.minecraft.util.Mth.lerp(e, from.yaw(), to.yaw()),
+                net.minecraft.util.Mth.lerp(e, from.roll(), to.roll()));
     }
 
     @Override

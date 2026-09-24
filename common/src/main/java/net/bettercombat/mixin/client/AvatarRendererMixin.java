@@ -29,7 +29,7 @@ public abstract class AvatarRendererMixin<T extends Avatar & ClientAvatarEntity>
                                                      CallbackInfo ci) {
         if (entity instanceof PlayerAttackAnimatable animatable) {
             EmoteItemAnchorHolder holder = (EmoteItemAnchorHolder) state;
-            holder.bettercombat$setEmoteItemAnchor(animatable.getEmoteItemAnchor());
+            holder.bettercombat$setEmoteItemAnchor(animatable.getEmoteItemAnchor(partialTick));
             holder.bettercombat$setEmoteOffHandAnchor(animatable.getEmoteOffHandAnchor());
             holder.bettercombat$setHidingEmoteItems(animatable.isHidingEmoteItems());
             ((DashAimHolder) state).bettercombat$setDashAim(animatable.getDashAimPitch(partialTick));
